@@ -9,10 +9,15 @@ const { CONFIG } = require('./constants/config');
 
 async function captureReport() {
     const browser = await puppeteer.launch({
-        args: ['--allow-no-sandbox-job', '--allow-sandbox-debugging', '--no-sandbox', 
-               '--disable-gpu', '--disable-gpu-sandbox', '--display', '--ignore-certificate-errors', 
-               '--disable-storage-reset=true']
-    });
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null, // Важливо для Docker
+    args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage', // Вирішує проблему з нестачею пам'яті в контейнерах
+        '--disable-gpu'
+    ],
+    headless: 'new' // Або true
+});
 
     const page = await browser.newPage();
     await page.setViewport(CONFIG.viewport);
@@ -35,6 +40,7 @@ async function captureReport() {
                 screenEmulation: CONFIG.lighthouse.screenEmulation,
                 formFactor: CONFIG.lighthouse.formFactor,
                 onlyCategories: CONFIG.lighthouse.onlyCategories,
+                disableJavaScript: CONFIG.lighthouse.disableJavaScript,
             },
         },
     });
@@ -119,9 +125,10 @@ async function captureReport() {
 
 
     // ================================ REPORTING ================================
-    const reportPath = require('path').join(__dirname, '..', 'user-flow.report.html');
+    const reportPath = require('path').join(__dirname, '..', 'reports', 'user-flow.report.html');
     const report = await flow.generateReport();
     fs.writeFileSync(reportPath, report);
+    console.log(`Report saved to: ${reportPath}`);
     
     await browser.close();
 }

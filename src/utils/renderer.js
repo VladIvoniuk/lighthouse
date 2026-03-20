@@ -1,7 +1,3 @@
-
-// ============== UTILITIES FOR RENDERING ==============
-
-
 const waitTillHTMLRendered = async (page, timeout = 30000) => {
   const checkDurationMsecs = 1000; 
   const maxChecks = timeout / checkDurationMsecs; 
@@ -12,27 +8,34 @@ const waitTillHTMLRendered = async (page, timeout = 30000) => {
 
   while(checkCounts++ <= maxChecks){
     try {
-      let html = await page.content();  // Get the full HTML content of the page
-      let currentHTMLSize = html.length;   // Current size of the HTML content
+      // 1. Отримуємо весь контент (це безпечно, бо повертає рядок)
+      let html = await page.content();  
+      let currentHTMLSize = html.length;
 
-      let bodyHTMLSize = await page.evaluate(() => document.body.innerHTML.length); 
+      // 2. БЕЗПЕЧНЕ отримання довжини body
+      // Якщо document.body немає, повернемо 0
+      let bodyHTMLSize = await page.evaluate(() => {
+        return document.body ? document.body.innerHTML.length : 0;
+      }); 
 
-      if(lastHTMLSize != 0 && currentHTMLSize == lastHTMLSize) // Checking if size is stable for this iteration
+      if(lastHTMLSize !== 0 && currentHTMLSize === lastHTMLSize && bodyHTMLSize > 0) {
         countStableSizeIterations++;
-      else 
-        countStableSizeIterations = 0; // Reset if size is changed
+      } else {
+        countStableSizeIterations = 0; 
+      }
 
-      if(countStableSizeIterations >= minStableSizeIterations) {  // If size has been stable for required iterations
+      if(countStableSizeIterations >= minStableSizeIterations) {
         console.log("Fully Rendered Page: " + page.url());
         break;
       }
 
       lastHTMLSize = currentHTMLSize;
-      await new Promise(resolve => setTimeout(resolve, checkDurationMsecs)); // Delay before next check
+      await new Promise(resolve => setTimeout(resolve, checkDurationMsecs));
     } catch (e) {
-      if (e.message.includes('Execution context was destroyed')) { // Handle navigation/context destruction errors
-        console.log('Page navigated, waiting for new context...'); // Wait for a moment before retrying
-        await new Promise(resolve => setTimeout(resolve, 1000));  // Wait before retrying
+      // Додаємо ігнорування помилки, якщо body ще не з'явився
+      if (e.message.includes('innerHTML') || e.message.includes('Execution context')) {
+        console.log('Waiting for DOM/body to be available...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } else {
         throw e;
       }

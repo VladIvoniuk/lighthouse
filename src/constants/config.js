@@ -3,7 +3,7 @@
 // ============== CONFIG SETTINGS ==============
 
 const CONFIG = {
-    baseURL: "http://localhost/",
+    baseURL: "http://wp/",
     viewport: { width: 1920, height: 1080 },
     defaultTimeout: 10000,
     navigationTimeout: 30000,
@@ -26,7 +26,8 @@ const CONFIG = {
             disabled: false
         },
         formFactor: "desktop",
-        onlyCategories: ['performance']
+        onlyCategories: ['performance'],
+        disableJavaScript: false
     }
 };
 

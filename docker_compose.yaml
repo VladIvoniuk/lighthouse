@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  wp:
+    image: web2wol/wp
+    container_name: wp  # Важливо, щоб звертатися за цим іменем
+    ports:
+      - "80:80"
+    networks:
+      - pte-network
+
+  lighthouse:
+    build: .
+    container_name: lighthouse-runner
+    volumes:
+      - .:/app
+    depends_on:
+      - wp
+    networks:
+      - pte-network
+    # Додаємо аргументи, щоб контейнер не закрився миттєво, якщо треба дебажити
+    tty: true 
+
+networks:
+  pte-network:
+    external: true  # Кажемо Docker, що ця мережа вже існує
